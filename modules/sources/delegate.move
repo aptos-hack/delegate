@@ -145,6 +145,29 @@ module delegate_addr::delegate {
         delegation_info_list
     }
 
+    #[view]
+    public fun get_delegates_by_vault(vault: address): vector<DelegationInfo> acquires VaultDelegations {
+        let vault_delegations_ref = borrow_global<VaultDelegations>(vault);
+        let delegations = &vault_delegations_ref.delegations;
+
+        let delegation_info_list: vector<DelegationInfo> = vector::empty<DelegationInfo>();
+
+        let idx = 0;
+        while (idx < vector::length(delegations)) {
+            let delegation_info = vector::borrow(delegations, idx);
+            if (delegation_info.vault == vault) {
+                // For now we only support DELEGATE_ALL
+                if (delegation_info.delegatation_type == DELEGATE_ALL) {
+                    vector::push_back(&mut delegation_info_list, *delegation_info);
+                }
+            };
+
+            idx = idx + 1;
+        };
+
+        delegation_info_list
+    }
+
     fun set_delegation_values(
         vault: address,
         delegate: address,
@@ -319,6 +342,15 @@ module delegate_addr::delegate {
         assert!(delegation_info.delegatation_type == DELEGATE_ALL, 0x80002);
         assert!(delegation_info.vault == signer::address_of(vault), 0x80003);
         assert!(delegation_info.delegate == signer::address_of(delegate), 0x80004);
+
+        // Read vault delegates info
+        let delegates = get_delegates_by_vault(signer::address_of(vault));
+        assert!(vector::length(&delegates) == 1, 0x80005);
+
+        let delegate_info = vector::borrow(&delegates, 0);
+        assert!(delegate_info.delegatation_type == DELEGATE_ALL, 0x80006);
+        assert!(delegate_info.vault == signer::address_of(vault), 0x80007);
+        assert!(delegate_info.delegate == signer::address_of(delegate), 0x80008);
     }
 
     // Single vault, delegating multiple delegates
@@ -362,6 +394,25 @@ module delegate_addr::delegate {
         assert!(delegate3_info.delegatation_type == DELEGATE_ALL, 0x80010);
         assert!(delegate3_info.vault == signer::address_of(vault), 0x80011);
         assert!(delegate3_info.delegate == signer::address_of(delegate3), 0x80012);
+
+        // Read vault info
+        let delegates = get_delegates_by_vault(signer::address_of(vault));
+        assert!(vector::length(&delegates) == 3, 0x80011);
+
+        let delegate_info1 = vector::borrow(&delegates, 0);
+        assert!(delegate_info1.delegatation_type == DELEGATE_ALL, 0x80012);
+        assert!(delegate_info1.vault == signer::address_of(vault), 0x80013);
+        assert!(delegate_info1.delegate == signer::address_of(delegate1), 0x80014);
+
+        let delegate_info2 = vector::borrow(&delegates, 1);
+        assert!(delegate_info2.delegatation_type == DELEGATE_ALL, 0x80015);
+        assert!(delegate_info2.vault == signer::address_of(vault), 0x80016);
+        assert!(delegate_info2.delegate == signer::address_of(delegate2), 0x80017);
+
+        let delegate_info3 = vector::borrow(&delegates, 2);
+        assert!(delegate_info3.delegatation_type == DELEGATE_ALL, 0x80018);
+        assert!(delegate_info3.vault == signer::address_of(vault), 0x80019);
+        assert!(delegate_info3.delegate == signer::address_of(delegate3), 0x80020);
     }
 
     // Multiple vaults, delegating single delegate
@@ -397,6 +448,15 @@ module delegate_addr::delegate {
         assert!(delegate_info3.delegatation_type == DELEGATE_ALL, 0x80008);
         assert!(delegate_info3.vault == signer::address_of(vault3), 0x80009);
         assert!(delegate_info3.delegate == signer::address_of(delegate), 0x80010);
+
+        // Read vault info
+        let delegates = get_delegates_by_vault(signer::address_of(vault1));
+        assert!(vector::length(&delegates) == 1, 0x80011);
+
+        let delegate_info = vector::borrow(&delegates, 0);
+        assert!(delegate_info.delegatation_type == DELEGATE_ALL, 0x80012);
+        assert!(delegate_info.vault == signer::address_of(vault1), 0x80013);
+        assert!(delegate_info.delegate == signer::address_of(delegate), 0x80014);
     }
 
     #[test(account = @0xa)]
