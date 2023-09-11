@@ -300,4 +300,170 @@ module delegate_addr::delegate {
 
         delegate_for_all(vault, signer::address_of(delegate), true);
     }
+
+    #[test(vault = @0xa, delegate = @0xb)]
+    fun test_single_vault_delegate_read(vault: &signer, delegate: &signer) acquires DelegateTable, VaultDelegations {
+        set_up_test(vault,  delegate);
+
+        assert!(is_delegate_registered(signer::address_of(delegate)) == true, 0x50001);
+        assert!(is_vault_registered(signer::address_of(vault)) == true, 0x50002);
+
+        // Delegate vault to delegate address for all modules and tokens
+        delegate_for_all(vault, signer::address_of(delegate), true);
+
+        // Read delegation info
+        let delegation_info_list = get_delegation_by_delegate(signer::address_of(delegate));
+        assert!(vector::length(&delegation_info_list) == 1, 0x80001);
+
+        let delegation_info = vector::borrow(&delegation_info_list, 0);
+        assert!(delegation_info.delegatation_type == DELEGATE_ALL, 0x80002);
+        assert!(delegation_info.vault == signer::address_of(vault), 0x80003);
+        assert!(delegation_info.delegate == signer::address_of(delegate), 0x80004);
+    }
+
+    // Single vault, delegating multiple delegates
+    #[test(vault = @0xa, delegate1 = @0xb, delegate2 = @0xc, delegate3 = @0xd)]
+    fun test_single_vault_multiple_delegates_read(vault: &signer, delegate1: &signer, delegate2: &signer, delegate3: &signer) acquires DelegateTable, VaultDelegations {
+        set_up_test_multiple_delegates(vault,  delegate1, delegate2, delegate3);
+
+        assert!(is_delegate_registered(signer::address_of(delegate1)) == true, 0x50001);
+        assert!(is_delegate_registered(signer::address_of(delegate2)) == true, 0x50002);
+        assert!(is_delegate_registered(signer::address_of(delegate3)) == true, 0x50003);
+        assert!(is_vault_registered(signer::address_of(vault)) == true, 0x50004);
+
+        // Delegate vault to delegate address for all modules and tokens
+        delegate_for_all(vault, signer::address_of(delegate1), true);
+        delegate_for_all(vault, signer::address_of(delegate2), true);
+        delegate_for_all(vault, signer::address_of(delegate3), true);
+
+        // Read delegate1 info
+        let delegate1_info_list = get_delegation_by_delegate(signer::address_of(delegate1));
+        assert!(vector::length(&delegate1_info_list) == 1, 0x80001);
+
+        let delegate1_info = vector::borrow(&delegate1_info_list, 0);
+        assert!(delegate1_info.delegatation_type == DELEGATE_ALL, 0x80002);
+        assert!(delegate1_info.vault == signer::address_of(vault), 0x80003);
+        assert!(delegate1_info.delegate == signer::address_of(delegate1), 0x80004);
+
+        // Read delegate2 info
+        let delegate2_info_list = get_delegation_by_delegate(signer::address_of(delegate2));
+        assert!(vector::length(&delegate2_info_list) == 1, 0x80005);
+
+        let delegate2_info = vector::borrow(&delegate2_info_list, 0);
+        assert!(delegate2_info.delegatation_type == DELEGATE_ALL, 0x80006);
+        assert!(delegate2_info.vault == signer::address_of(vault), 0x80007);
+        assert!(delegate2_info.delegate == signer::address_of(delegate2), 0x80008);
+
+        // Read delegate3 info
+        let delegate3_info_list = get_delegation_by_delegate(signer::address_of(delegate3));
+        assert!(vector::length(&delegate3_info_list) == 1, 0x80009);
+
+        let delegate3_info = vector::borrow(&delegate3_info_list, 0);
+        assert!(delegate3_info.delegatation_type == DELEGATE_ALL, 0x80010);
+        assert!(delegate3_info.vault == signer::address_of(vault), 0x80011);
+        assert!(delegate3_info.delegate == signer::address_of(delegate3), 0x80012);
+    }
+
+    // Multiple vaults, delegating single delegate
+    #[test(vault1 = @0xa, vault2 = @0xb, vault3 = @0xc, delegate = @0xd)]
+    fun test_multi_vaults_single_delegate_read(vault1: &signer, vault2: &signer, vault3: &signer, delegate: &signer) acquires DelegateTable, VaultDelegations {
+        set_up_test_multiple_vaults(vault1, vault2, vault3,  delegate);
+
+        assert!(is_vault_registered(signer::address_of(vault1)) == true, 0x50001);
+        assert!(is_vault_registered(signer::address_of(vault2)) == true, 0x50002);
+        assert!(is_vault_registered(signer::address_of(vault3)) == true, 0x50003);
+        assert!(is_delegate_registered(signer::address_of(delegate)) == true, 0x50004);
+
+        // Delegate vault to delegate address for all modules and tokens
+        delegate_for_all(vault1, signer::address_of(delegate), true);
+        delegate_for_all(vault2, signer::address_of(delegate), true);
+        delegate_for_all(vault3, signer::address_of(delegate), true);
+
+        // Read delegate info
+        let delegate_info_list = get_delegation_by_delegate(signer::address_of(delegate));
+        assert!(vector::length(&delegate_info_list) == 3, 0x80001);
+
+        let delegate_info1 = vector::borrow(&delegate_info_list, 0);
+        assert!(delegate_info1.delegatation_type == DELEGATE_ALL, 0x80002);
+        assert!(delegate_info1.vault == signer::address_of(vault1), 0x80003);
+        assert!(delegate_info1.delegate == signer::address_of(delegate), 0x80004);
+
+        let delegate_info2 = vector::borrow(&delegate_info_list, 1);
+        assert!(delegate_info2.delegatation_type == DELEGATE_ALL, 0x80005);
+        assert!(delegate_info2.vault == signer::address_of(vault2), 0x80006);
+        assert!(delegate_info2.delegate == signer::address_of(delegate), 0x80007);
+
+        let delegate_info3 = vector::borrow(&delegate_info_list, 2);
+        assert!(delegate_info3.delegatation_type == DELEGATE_ALL, 0x80008);
+        assert!(delegate_info3.vault == signer::address_of(vault3), 0x80009);
+        assert!(delegate_info3.delegate == signer::address_of(delegate), 0x80010);
+    }
+
+    #[test(account = @0xa)]
+    fun test_bulk_register(account: &signer)  {
+        account::create_account_for_test(signer::address_of(account));
+
+        bulk_regsiter(account);
+
+        assert!(is_vault_registered(signer::address_of(account)) == true, 0x50001);
+        assert!(is_delegate_registered(signer::address_of(account)) == true, 0x50002);
+    }
+
+    // Multiple vaults, delegating multiple delegates
+    #[test(vault1 = @0xa, vault2 = @0xb, vault3 = @0xc, delegate1 = @0xd, delegate2 = @0xe, delegate3 = @0xf)]
+    fun test_multi_vaults_multi_delegates(vault1: &signer, vault2: &signer, vault3: &signer, delegate1: &signer, delegate2: &signer, delegate3: &signer) acquires DelegateTable, VaultDelegations {
+        set_up_test_multi_vaults_multi_delegates(vault1, vault2, vault3,  delegate1, delegate2, delegate3);
+
+        // Delegate vault to delegate address for all modules and tokens
+        delegate_for_all(vault1, signer::address_of(delegate1), true);
+        delegate_for_all(vault1, signer::address_of(delegate2), true);
+
+        delegate_for_all(vault2, signer::address_of(delegate2), true);
+
+        delegate_for_all(vault3, signer::address_of(delegate1), true);
+        delegate_for_all(vault3, signer::address_of(delegate2), true);
+        delegate_for_all(vault3, signer::address_of(delegate3), true);
+
+        // Read delegate1 info list
+        let delegate1_info_list = get_delegation_by_delegate(signer::address_of(delegate1));
+        assert!(vector::length(&delegate1_info_list) == 2, 0x80001);
+
+        let delegate1_info1 = vector::borrow(&delegate1_info_list, 0);
+        assert!(delegate1_info1.delegatation_type == DELEGATE_ALL, 0x80002);
+        assert!(delegate1_info1.vault == signer::address_of(vault1), 0x80003);
+        assert!(delegate1_info1.delegate == signer::address_of(delegate1), 0x80004);
+
+        let delegate1_info2 = vector::borrow(&delegate1_info_list, 1);
+        assert!(delegate1_info2.delegatation_type == DELEGATE_ALL, 0x80005);
+        assert!(delegate1_info2.vault == signer::address_of(vault3), 0x80006);
+        assert!(delegate1_info2.delegate == signer::address_of(delegate1), 0x80007);
+
+        // Read delegate2 info list
+        let delegate2_info_list = get_delegation_by_delegate(signer::address_of(delegate2));
+        assert!(vector::length(&delegate2_info_list) == 3, 0x80008);
+
+        let delegate2_info1 = vector::borrow(&delegate2_info_list, 0);
+        assert!(delegate2_info1.delegatation_type == DELEGATE_ALL, 0x80009);
+        assert!(delegate2_info1.vault == signer::address_of(vault1), 0x80010);
+        assert!(delegate2_info1.delegate == signer::address_of(delegate2), 0x80011);
+
+        let delegate2_info2 = vector::borrow(&delegate2_info_list, 1);
+        assert!(delegate2_info2.delegatation_type == DELEGATE_ALL, 0x80012);
+        assert!(delegate2_info2.vault == signer::address_of(vault2), 0x80013);
+        assert!(delegate2_info2.delegate == signer::address_of(delegate2), 0x80014);
+
+        let delegate2_info3 = vector::borrow(&delegate2_info_list, 2);
+        assert!(delegate2_info3.delegatation_type == DELEGATE_ALL, 0x80015);
+        assert!(delegate2_info3.vault == signer::address_of(vault3), 0x80016);
+        assert!(delegate2_info3.delegate == signer::address_of(delegate2), 0x80017);
+
+        // Read delegate3 info list
+        let delegate3_info_list = get_delegation_by_delegate(signer::address_of(delegate3));
+        assert!(vector::length(&delegate3_info_list) == 1, 0x80018);
+
+        let delegate3_info = vector::borrow(&delegate3_info_list, 0);
+        assert!(delegate3_info.delegatation_type == DELEGATE_ALL, 0x80019);
+        assert!(delegate3_info.vault == signer::address_of(vault3), 0x80020);
+        assert!(delegate3_info.delegate == signer::address_of(delegate3), 0x80021);
+    }
 }
