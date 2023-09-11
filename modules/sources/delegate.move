@@ -221,4 +221,83 @@ module delegate_addr::delegate {
             table::remove(&mut delegate_table.delegation_hash_to_info, delegation_hash_str);
         }
     }
+
+    #[test_only]
+    fun set_up_test(vault: &signer, delegate: &signer) {
+        account::create_account_for_test(signer::address_of(vault));
+
+        // register vault and delegates
+        register_delegate(delegate);
+        register_vault(vault);
+
+        account::create_account_for_test(signer::address_of(delegate));
+    }
+
+    #[test_only]
+    fun set_up_test_multiple_delegates(
+        vault: &signer, delegate1: &signer, delegate2: &signer, delegate3: &signer) {
+        account::create_account_for_test(signer::address_of(vault));
+
+        // register vault and delegates
+        register_vault(vault);
+
+        register_delegate(delegate1);
+        register_delegate(delegate2);
+        register_delegate(delegate3);
+
+        // TODO: put this into a loop
+        account::create_account_for_test(signer::address_of(delegate1));
+        account::create_account_for_test(signer::address_of(delegate2));
+        account::create_account_for_test(signer::address_of(delegate3));
+    }
+
+    #[test_only]
+    fun set_up_test_multiple_vaults(vault1: &signer, vault2: &signer, vault3: &signer, delegate: &signer) {
+        // TODO: put this in a loop
+        account::create_account_for_test(signer::address_of(vault1));
+        account::create_account_for_test(signer::address_of(vault2));
+        account::create_account_for_test(signer::address_of(vault3));
+
+        // register vault and delegates
+        register_vault(vault1);
+        register_vault(vault2);
+        register_vault(vault3);
+
+        register_delegate(delegate);
+
+        account::create_account_for_test(signer::address_of(delegate));
+    }
+
+    #[test_only]
+    fun set_up_test_multi_vaults_multi_delegates(
+        vault1: &signer, vault2: &signer, vault3: &signer, delegate1: &signer, delegate2: &signer, delegate3: &signer) {
+
+        // TODO: put this in a loop
+        account::create_account_for_test(signer::address_of(vault1));
+        account::create_account_for_test(signer::address_of(vault2));
+        account::create_account_for_test(signer::address_of(vault3));
+
+        // register vault and delegates
+        register_delegate(delegate1);
+        register_delegate(delegate2);
+        register_delegate(delegate3);
+
+        register_vault(vault1);
+        register_vault(vault2);
+        register_vault(vault3);
+
+        // TODO: put this into a loop
+        account::create_account_for_test(signer::address_of(delegate1));
+        account::create_account_for_test(signer::address_of(delegate2));
+        account::create_account_for_test(signer::address_of(delegate3));
+    }
+
+    #[test(vault = @0xa, delegate = @0xb)]
+    fun test_delegate_for_all(vault: &signer, delegate: &signer) acquires DelegateTable, VaultDelegations {
+        set_up_test(vault,  delegate);
+        assert!(is_delegate_registered(signer::address_of(delegate)) == true, 0x50001);
+        assert!(is_vault_registered(signer::address_of(vault)) == true, 0x50002);
+
+        delegate_for_all(vault, signer::address_of(delegate), true);
+    }
 }

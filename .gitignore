@@ -7,5 +7,5 @@
 /dataSources/
 /dataSources.local.xml
 # Aptos build output
-/build
-/.aptos
+/modules/build
+/modules/.aptos
